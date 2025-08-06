@@ -6,7 +6,10 @@
       "Bash(powershell:*)",
       "Bash(mkdir:*)",
       "Bash(dir:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(pip install:*)",
+      "Bash(ruff check:*)",
+      "Bash(black:*)"
     ],
     "deny": []
   }

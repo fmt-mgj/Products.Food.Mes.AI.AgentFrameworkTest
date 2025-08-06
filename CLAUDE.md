@@ -2,6 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🔴 CRITICAL: PocketFlow Learning Resources - MUST USE
+
+**⚠️ MANDATORY: When developing agents, you MUST actively consult these resources:**
+
+1. **📖 Core Framework** (`pocketflow/__init__.py`)
+   - The complete 100-line implementation defining ALL PocketFlow functionality
+   - Contains: BaseNode, Node, BatchNode, Flow, BatchFlow, AsyncNode, AsyncFlow, Parallel variants
+   - **ALWAYS reference this file to understand exact framework behavior**
+
+2. **📚 Documentation** (`pocketflow_docs/`)
+   - **Core Abstractions** (`pocketflow_docs/core_abstraction/`): Node lifecycle, Flow orchestration, Batch processing
+   - **Design Patterns** (`pocketflow_docs/design_pattern/`): Agent, RAG, Multi-agent, MapReduce patterns
+   - **Utility Functions** (`pocketflow_docs/utility_function/`): LLM calls, embeddings, chunking, etc.
+   - **MUST read relevant docs before implementing any pattern**
+
+3. **🍳 Cookbook Examples** (`cookbook/`)
+   - **40+ working examples** demonstrating every PocketFlow pattern
+   - Each example includes: `flow.py`, `nodes.py`, `utils/`, `requirements.txt`
+   - **CRITICAL: Study similar examples before implementing new features**
+   - Key examples to review:
+     - `pocketflow-agent/`: Basic agent with decision-making
+     - `pocketflow-multi-agent/`: Supervisor pattern
+     - `pocketflow-fastapi-*`: REST API integration patterns
+     - `pocketflow-async-*`: Async/parallel processing
+     - `pocketflow-batch-*`: Batch processing patterns
+
+**Development Workflow:**
+1. First, read the 100-line `pocketflow/__init__.py` to understand core mechanics
+2. Then, consult `pocketflow_docs/` for the specific pattern you're implementing
+3. Finally, examine relevant `cookbook/` examples for practical implementation patterns
+4. Use these patterns directly in your implementation - don't reinvent the wheel!
+
 ## CRITICAL: Project Boundaries
 
 **DO NOT MODIFY:**
@@ -184,6 +216,27 @@ Each cookbook example follows the same structure with its own flow.py, nodes.py,
 
 ## BMAD → PocketFlow Generator Architecture
 
+### 🎯 CRITICAL: Using PocketFlow Resources for BMAD Conversion
+
+When converting BMAD agents to PocketFlow nodes, **ALWAYS**:
+
+1. **Map BMAD Agent Types to PocketFlow Patterns:**
+   - Simple prompt-based agents → Study `cookbook/pocketflow-agent/`
+   - Agents with dependencies → Study `cookbook/pocketflow-supervisor/`
+   - Parallel agents → Study `cookbook/pocketflow-async-parallel-batch/`
+   - Workflow agents → Study `cookbook/pocketflow-workflow/`
+
+2. **Reference Documentation for Each Feature:**
+   - Memory persistence → `pocketflow_docs/core_abstraction/communication.md`
+   - Flow transitions → `pocketflow_docs/core_abstraction/flow.md`
+   - Async execution → `pocketflow_docs/core_abstraction/async.md`
+   - Batch processing → `pocketflow_docs/core_abstraction/batch.md`
+
+3. **Copy Patterns from Cookbook:**
+   - Don't create new patterns - use existing ones from cookbook
+   - Each cookbook example is production-tested
+   - Modify cookbook patterns to fit BMAD requirements
+
 ### Key Subsystems to Implement
 
 1. **BMAD Parser** (`scripts/parser.py`)
@@ -265,3 +318,18 @@ Each cookbook example follows the same structure with its own flow.py, nodes.py,
 - **Generation must complete in under 1 second** - This is a hard requirement
 - **Use async/await throughout** - For all I/O operations
 - **Test coverage minimum 80%** - Especially for core modules
+
+## 📌 Quick Reference Paths
+
+**Essential Files to Keep Open While Developing:**
+- Core Framework: `pocketflow/__init__.py` (100 lines)
+- Type Hints: `pocketflow/__init__.pyi`
+- Documentation Index: `pocketflow_docs/index.md`
+- Cookbook Index: `cookbook/README.md`
+- Similar Example: `cookbook/pocketflow-[pattern-name]/`
+
+**When stuck, check these in order:**
+1. The 100-line core (`pocketflow/__init__.py`)
+2. Relevant documentation (`pocketflow_docs/`)
+3. Working cookbook example (`cookbook/`)
+4. Test files for usage patterns (`tests/`)

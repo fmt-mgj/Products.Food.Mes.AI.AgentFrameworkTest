@@ -1,0 +1,67 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from pocketflow import Flow
+{% for agent_id, (agent_metadata, _) in agents.items() %}
+from agents.{{ agent_id }} import {{ agent_id|classname }}Node
+{% endfor %}
+
+app = FastAPI(title="BMAD PocketFlow Runtime", version="1.0.0")
+
+class RunRequest(BaseModel):
+    input: str = ""
+
+class RunResponse(BaseModel):
+    result: str
+    agent_results: dict
+
+@app.get("/health")
+def health():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "bmad-pocketflow-runtime"}
+
+@app.post("/run", response_model=RunResponse)
+def run_flow(request: RunRequest):
+    """Execute the agent flow with the provided input."""
+    
+    # Initialize shared store
+    shared = {"input": request.input}
+    
+    # Create flow with sequential execution
+    flow = Flow()
+    
+    {% if agents %}
+    # Create and chain agent nodes
+    {% set agent_list = agents.items() | list %}
+    {% for agent_id, (agent_metadata, _) in agent_list %}
+    {{ agent_id }}_node = {{ agent_id|classname }}Node()
+    {% endfor %}
+    
+    {% if agent_list|length > 0 %}
+    # Chain nodes sequentially
+    {% set first_agent = agent_list[0][0] %}
+    flow.start({{ first_agent }}_node)
+    {% for i in range(1, agent_list|length) %}
+    {% set prev_agent = agent_list[i-1][0] %}
+    {% set curr_agent = agent_list[i][0] %}
+    {{ prev_agent }}_node >> {{ curr_agent }}_node
+    {% endfor %}
+    {% endif %}
+    
+    # Execute the flow
+    result = flow.run(shared)
+    {% else %}
+    # No agents defined - return input as result
+    result = request.input
+    {% endif %}
+    
+    # Collect all agent results
+    agent_results = {}
+    {% for agent_id, (agent_metadata, _) in agents.items() %}
+    if "{{ agent_id }}_result" in shared:
+        agent_results["{{ agent_id }}"] = shared["{{ agent_id }}_result"]
+    {% endfor %}
+    
+    return RunResponse(
+        result=shared.get("last_result", str(result)),
+        agent_results=agent_results
+    )

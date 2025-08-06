@@ -1,0 +1,11 @@
+"""Generated BMAD agents package."""
+
+{% for agent_id, (agent_metadata, _) in agents.items() %}
+from .{{ agent_id }} import {{ agent_id|classname }}Node
+{% endfor %}
+
+__all__ = [
+{% for agent_id, (agent_metadata, _) in agents.items() %}
+    "{{ agent_id|classname }}Node",
+{% endfor %}
+]
