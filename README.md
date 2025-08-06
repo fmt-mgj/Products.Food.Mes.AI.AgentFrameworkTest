@@ -1,3 +1,14 @@
+# BMAD → PocketFlow Generator & Runtime
+
+## Overview
+
+This project implements a generator and runtime system that converts BMAD methodology artifacts (Markdown prompts, checklists, workflows) into executable PocketFlow code. It provides:
+
+1. **CLI Generator** that parses BMAD files and generates PocketFlow code
+2. **FastAPI Runtime** that executes generated agents with REST API endpoints
+3. **Document Management** for dynamic Markdown input/output
+4. **Memory System** with isolation and persistence
+
 <div align="center">
   <img src="https://github.com/The-Pocket/.github/raw/main/assets/title.png" alt="Pocket Flow – 100-line minimalist LLM framework" width="600"/>
 </div>
@@ -25,6 +36,94 @@ Get started with Pocket Flow:
 - To learn more, check out the [video tutorial](https://youtu.be/0Zr3NwcvpA0) and [documentation](https://the-pocket.github.io/PocketFlow/)
 - 🎉 Join our [Discord](https://discord.gg/hUHHE9Sa6T) to connect with other developers building with Pocket Flow!
 - 🎉 Pocket Flow now has [Typescript](https://github.com/The-Pocket/PocketFlow-Typescript), [Java](https://github.com/The-Pocket/PocketFlow-Java), [C++](https://github.com/The-Pocket/PocketFlow-CPP), [Go](https://github.com/The-Pocket/PocketFlow-Go), [Rust](https://github.com/The-Pocket/PocketFlow-Rust) and [PHP](https://github.com/The-Pocket/PocketFlow-PHP) versions!
+
+## Setup Instructions
+
+### Prerequisites
+
+- Python 3.10 or higher
+- Git
+- pip package manager
+
+### Quick Start
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd bmad-pocketflow
+   ```
+
+2. **Create a virtual environment:**
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
+
+   # macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   # Production dependencies
+   pip install -r requirements.txt
+
+   # Development dependencies (includes testing and linting tools)
+   pip install -r requirements-dev.txt
+   ```
+
+4. **Install pre-commit hooks (for developers):**
+   ```bash
+   pre-commit install
+   ```
+
+### Project Structure
+
+```
+bmad-pocketflow/
+├── bmad/           # BMAD source files (user-edited)
+├── generated/      # Generated PocketFlow code (auto-generated)
+├── scripts/        # Generator scripts
+├── config/         # Runtime configuration
+├── docs/           # Documentation
+└── tests/          # Test suite
+```
+
+### Development Workflow
+
+1. **Run tests:**
+   ```bash
+   pytest tests/
+   ```
+
+2. **Format code:**
+   ```bash
+   black scripts/ tests/
+   ruff --fix scripts/ tests/
+   ```
+
+3. **Generate PocketFlow code from BMAD files:**
+   ```bash
+   python scripts/bmad2pf.py --src ./bmad --out ./generated
+   ```
+
+4. **Start the FastAPI runtime:**
+   ```bash
+   uvicorn generated.app:app --reload --port 8000
+   ```
+
+### Configuration
+
+- **Code formatting:** Configured in `pyproject.toml`
+- **Testing:** Configured in `pytest.ini`
+- **Pre-commit hooks:** Configured in `.pre-commit-config.yaml`
+
+### API Documentation
+
+Once the FastAPI server is running, visit:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ## Why Pocket Flow?
 

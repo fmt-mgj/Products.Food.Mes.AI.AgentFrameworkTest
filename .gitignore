@@ -1,3 +1,6 @@
+# Generated code
+/generated/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -32,17 +35,30 @@ env/
 *.swp
 *.swo
 .cursor/
-.bmad-core/
 
 # Testing
 .coverage
+.coverage.*
 .pytest_cache/
 htmlcov/
 .tox/
+coverage.xml
+*.cover
+
+# Environment files
+.env
+.env.*
+secrets.env
+*.key
+*.pem
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Memory storage (runtime data)
+/memory/
 
 # Project specific
 *.log
