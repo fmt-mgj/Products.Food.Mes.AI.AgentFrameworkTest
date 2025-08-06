@@ -10,7 +10,11 @@
       "Bash(pip install:*)",
       "Bash(ruff check:*)",
       "Bash(black:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(pip show:*)",
+      "Bash(uvicorn:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
