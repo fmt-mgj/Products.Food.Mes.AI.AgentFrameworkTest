@@ -80,8 +80,15 @@ async def test_run_flow_success(flow_executor_with_mock_agents):
 @pytest.mark.asyncio
 async def test_run_flow_missing_documents(flow_executor_with_mock_agents):
     """Test flow execution with missing documents."""
+    # Set up agent metadata with missing documents and 'wait' config
+    flow_executor_with_mock_agents.agents_metadata = {
+        "test_agent": {"wait_for": {"docs": ["missing_doc1", "missing_doc2"], "agents": []}}
+    }
+    flow_executor_with_mock_agents.runtime_config = {"on_missing_doc": "wait"}
+    flow_executor_with_mock_agents.agents = {"test_agent": type("MockAgent", (), {})}
+    
     # Mock document checker to return missing docs
-    with patch.object(flow_executor_with_mock_agents, 'check_documents', new_callable=AsyncMock) as mock_check:
+    with patch.object(flow_executor_with_mock_agents.dependency_checker, 'check_document_dependencies') as mock_check:
         mock_check.return_value = ["missing_doc1", "missing_doc2"]
         
         request = RunRequest(
@@ -93,7 +100,7 @@ async def test_run_flow_missing_documents(flow_executor_with_mock_agents):
         response = await flow_executor_with_mock_agents.execute(request)
         
         assert response.result is None
-        assert response.pending_docs == ["missing_doc1", "missing_doc2"]
+        assert set(response.pending_docs) == {"missing_doc1", "missing_doc2"}
 
 
 @pytest.mark.asyncio
@@ -173,14 +180,15 @@ async def test_document_dependency_checking():
         (docs_dir / "existing_doc.md").write_text("Content")
         
         memory_manager = MemoryManager(memory_dir=temp_dir)
-        executor = FlowExecutor(memory_manager)
         
         # Mock the DOCS_DIR to point to our temp directory
         with patch('generated.executor.DOCS_DIR', docs_dir):
-            missing = await executor.check_documents(["existing_doc", "missing_doc"])
+            executor = FlowExecutor(memory_manager)
+            
+            missing = executor.dependency_checker.check_document_dependencies(["existing_doc", "missing_doc"])
             assert missing == ["missing_doc"]
             
-            missing = await executor.check_documents(["existing_doc"])
+            missing = executor.dependency_checker.check_document_dependencies(["existing_doc"])
             assert missing == []
             
     finally:
