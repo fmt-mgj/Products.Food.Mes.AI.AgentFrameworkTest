@@ -1,0 +1,20 @@
+# Runtime configuration (never overwritten by generator)
+llm:
+  provider: openai  # or anthropic, google
+  model: gpt-4
+  temperature: 0.7
+  max_tokens: 2000
+
+memory:
+  backend: file  # or redis
+  file_path: ./memory
+  cache_ttl: 3600
+
+logging:
+  level: INFO
+  format: json  # or text
+
+server:
+  host: 0.0.0.0
+  port: 8000
+  workers: 1  # for development, 4 for production

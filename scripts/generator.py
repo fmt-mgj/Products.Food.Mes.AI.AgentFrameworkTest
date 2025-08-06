@@ -16,7 +16,10 @@ from jinja2.exceptions import TemplateError
 try:
     from .parser import AgentMetadata
 except ImportError:
-    from scripts.parser import AgentMetadata
+    try:
+        from scripts.parser import AgentMetadata
+    except ImportError:
+        from parser import AgentMetadata
 
 logger = logging.getLogger(__name__)
 

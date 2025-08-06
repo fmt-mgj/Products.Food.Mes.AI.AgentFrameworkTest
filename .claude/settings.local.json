@@ -9,7 +9,8 @@
       "Bash(pre-commit run:*)",
       "Bash(pip install:*)",
       "Bash(ruff check:*)",
-      "Bash(black:*)"
+      "Bash(black:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

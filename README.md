@@ -119,6 +119,52 @@ bmad-pocketflow/
 - **Testing:** Configured in `pytest.ini`
 - **Pre-commit hooks:** Configured in `.pre-commit-config.yaml`
 
+## CLI Tool Usage
+
+The `bmad2pf.py` command-line tool converts BMAD artifacts to PocketFlow code in under 1 second.
+
+### Basic Usage
+
+```bash
+# Convert BMAD files to PocketFlow code
+python scripts/bmad2pf.py --src ./bmad --out ./generated
+
+# Use verbose mode for detailed output
+python scripts/bmad2pf.py --src ./bmad --out ./generated --verbose
+
+# Get help
+python scripts/bmad2pf.py --help
+```
+
+### Command Options
+
+- `--src DIR`: Source directory containing BMAD files (default: `./bmad`)
+- `--out DIR`: Output directory for generated code (default: `./generated`)  
+- `--verbose, -v`: Enable verbose output with debug information
+- `--help, -h`: Show help message and exit
+
+### Example Output
+
+```
+-> Parsing BMAD files from ./bmad...
+  [OK] Found 2 agents
+-> Loading configuration...
+  [OK] Loaded workflow.yaml
+-> Generating PocketFlow code...
+  [OK] Generated 4 files
+  [OK] Black formatting applied
+  [OK] Ruff validation passed
+[SUCCESS] Generation complete in 0.587s
+```
+
+### Generated Files
+
+The CLI tool generates:
+- `agents/` - Individual agent node classes
+- `app.py` - FastAPI application with REST endpoints
+- `utils.py` - Utility functions (LLM calls, etc.)
+- `agents/__init__.py` - Package initialization
+
 ### API Documentation
 
 Once the FastAPI server is running, visit:
