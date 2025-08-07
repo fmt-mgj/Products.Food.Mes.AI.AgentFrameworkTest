@@ -1,0 +1,73 @@
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+.cursor/
+
+# Python cache and bytecode
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Testing and coverage
+tests/
+.coverage
+.coverage.*
+htmlcov/
+*.log
+
+# Development dependencies
+.env
+.env.local
+.env.*.local
+secrets.env
+
+# Generated files (built inside container)
+generated/
+generated_*/
+memory/
+
+# Documentation source (keep only docs/ for runtime reference)
+docs/architecture/
+docs/stories/
+*.md
+README*
+
+# Cookbook examples and demos
+cookbook/
+pocketflow_demo.ipynb
+prompts/
+
+# Development scripts and utilities (excluding the main scripts/ folder)
+utils/
+activate.bat
+setup.py
+pytest.ini
+pyproject.toml
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Windows specific
+desktop.ini
