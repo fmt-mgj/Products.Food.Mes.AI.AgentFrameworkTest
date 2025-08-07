@@ -1,67 +1,203 @@
-from fastapi import FastAPI
+"""BMAD PocketFlow Runtime - Generated FastAPI Application.
+
+Implements orchestrator status tracking using pocketflow-communication patterns
+for external control and monitoring of agent execution flows.
+"""
+
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from pocketflow import Flow
+from typing import Dict, Any, List, Optional
+import asyncio
+import time
+import uuid
+from pocketflow import Flow{% if agents.values() | selectattr('0.parallel') | list %}, AsyncFlow{% endif %}
+
 {% for agent_id, (agent_metadata, _) in agents.items() %}
 from agents.{{ agent_id }} import {{ agent_id|classname }}Node
 {% endfor %}
 
 app = FastAPI(title="BMAD PocketFlow Runtime", version="1.0.0")
 
+# Global orchestrator state for external control (pocketflow-communication pattern)
+orchestrator_state: Dict[str, Dict[str, Any]] = {}
+
 class RunRequest(BaseModel):
     input: str = ""
+    execution_id: Optional[str] = None
+    wait_for_completion: bool = True
 
 class RunResponse(BaseModel):
     result: str
     agent_results: dict
+    execution_id: str
+    status: str
+    execution_time: float
+
+class StatusResponse(BaseModel):
+    execution_id: str
+    status: str
+    current_agent: Optional[str]
+    completed_agents: List[str]
+    agent_results: Dict[str, Any]
+    errors: List[str]
 
 @app.get("/health")
 def health():
     """Health check endpoint."""
     return {"status": "ok", "service": "bmad-pocketflow-runtime"}
 
+@app.get("/orchestrator/status/{execution_id}", response_model=StatusResponse)
+def get_execution_status(execution_id: str):
+    """Get execution status for external control monitoring."""
+    if execution_id not in orchestrator_state:
+        raise HTTPException(status_code=404, detail="Execution ID not found")
+    
+    state = orchestrator_state[execution_id]
+    return StatusResponse(**state)
+
+@app.get("/orchestrator/list")
+def list_executions():
+    """List all active and recent executions."""
+    return {
+        "active_executions": [
+            {"execution_id": eid, "status": state["status"], "current_agent": state.get("current_agent")}
+            for eid, state in orchestrator_state.items()
+            if state["status"] in ["running", "waiting"]
+        ],
+        "total_tracked": len(orchestrator_state)
+    }
+
+def update_orchestrator_state(execution_id: str, **updates):
+    """Update orchestrator state for external monitoring (pocketflow-communication pattern)."""
+    if execution_id not in orchestrator_state:
+        orchestrator_state[execution_id] = {
+            "execution_id": execution_id,
+            "status": "created",
+            "current_agent": None,
+            "completed_agents": [],
+            "agent_results": {},
+            "errors": [],
+            "created_at": time.time()
+        }
+    
+    orchestrator_state[execution_id].update(updates)
+    orchestrator_state[execution_id]["updated_at"] = time.time()
+
 @app.post("/run", response_model=RunResponse)
 def run_flow(request: RunRequest):
-    """Execute the agent flow with the provided input."""
+    """Execute the agent flow with orchestrator status tracking."""
+    start_time = time.time()
     
-    # Initialize shared store
-    shared = {"input": request.input}
+    # Generate execution ID for tracking
+    execution_id = request.execution_id or str(uuid.uuid4())
     
-    # Create flow with sequential execution
-    flow = Flow()
+    # Initialize orchestrator state
+    update_orchestrator_state(execution_id, status="starting")
     
-    {% if agents %}
-    # Create and chain agent nodes
-    {% set agent_list = agents.items() | list %}
-    {% for agent_id, (agent_metadata, _) in agent_list %}
-    {{ agent_id }}_node = {{ agent_id|classname }}Node()
-    {% endfor %}
-    
-    {% if agent_list|length > 0 %}
-    # Chain nodes sequentially
-    {% set first_agent = agent_list[0][0] %}
-    flow.start({{ first_agent }}_node)
-    {% for i in range(1, agent_list|length) %}
-    {% set prev_agent = agent_list[i-1][0] %}
-    {% set curr_agent = agent_list[i][0] %}
-    {{ prev_agent }}_node >> {{ curr_agent }}_node
-    {% endfor %}
-    {% endif %}
-    
-    # Execute the flow
-    result = flow.run(shared)
-    {% else %}
-    # No agents defined - return input as result
-    result = request.input
-    {% endif %}
-    
-    # Collect all agent results
-    agent_results = {}
-    {% for agent_id, (agent_metadata, _) in agents.items() %}
-    if "{{ agent_id }}_result" in shared:
-        agent_results["{{ agent_id }}"] = shared["{{ agent_id }}_result"]
-    {% endfor %}
-    
-    return RunResponse(
-        result=shared.get("last_result", str(result)),
-        agent_results=agent_results
-    )
+    try:
+        # Initialize shared store with orchestrator tracking
+        shared = {
+            "input": request.input,
+            "execution_id": execution_id,
+            "orchestrator_state": orchestrator_state[execution_id]
+        }
+        
+        {% if agents %}
+        # Check for parallel agents
+        {% set parallel_agents = agents.values() | selectattr('0.parallel') | list %}
+        {% if parallel_agents %}
+        # Use AsyncFlow for parallel agents
+        flow = AsyncFlow()
+        {% else %}
+        # Use regular Flow for sequential agents
+        flow = Flow()
+        {% endif %}
+        
+        # Create agent nodes with dependency awareness
+        {% set agent_list = agents.items() | list %}
+        {% for agent_id, (agent_metadata, _) in agent_list %}
+        {{ agent_id }}_node = {{ agent_id|classname }}Node()
+        {% endfor %}
+        
+        {% if agent_list|length > 0 %}
+        update_orchestrator_state(execution_id, status="running", current_agent="{{ agent_list[0][0] }}")
+        
+        # Build flow based on dependencies (following pocketflow-communication pattern)
+        {% set first_agent = agent_list[0][0] %}
+        flow.start({{ first_agent }}_node)
+        
+        # Chain nodes considering dependencies
+        {% for i in range(1, agent_list|length) %}
+        {% set prev_agent = agent_list[i-1][0] %}
+        {% set curr_agent = agent_list[i][0] %}
+        {% set curr_metadata = agent_list[i][1][0] %}
+        
+        # Check if current agent has dependencies on previous agents
+        {% if curr_metadata.wait_for.agents %}
+        # Agent has dependencies - will be checked in prep method
+        {{ prev_agent }}_node >> {{ curr_agent }}_node
+        {% else %}
+        # No dependencies - chain normally
+        {{ prev_agent }}_node >> {{ curr_agent }}_node
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        
+        # Execute the flow with orchestrator tracking
+        {% if parallel_agents %}
+        result = asyncio.run(flow.run_async(shared))
+        {% else %}
+        result = flow.run(shared)
+        {% endif %}
+        {% else %}
+        # No agents defined
+        result = request.input
+        {% endif %}
+        
+        # Collect all agent results for external monitoring
+        agent_results = {}
+        completed_agents = []
+        {% for agent_id, (agent_metadata, _) in agents.items() %}
+        if "{{ agent_id }}_result" in shared:
+            agent_results["{{ agent_id }}"] = shared["{{ agent_id }}_result"]
+            completed_agents.append("{{ agent_id }}")
+        {% endfor %}
+        
+        execution_time = time.time() - start_time
+        
+        # Update final orchestrator state
+        update_orchestrator_state(
+            execution_id,
+            status="completed",
+            current_agent=None,
+            completed_agents=completed_agents,
+            agent_results=agent_results
+        )
+        
+        return RunResponse(
+            result=shared.get("last_result", str(result)),
+            agent_results=agent_results,
+            execution_id=execution_id,
+            status="completed",
+            execution_time=execution_time
+        )
+        
+    except Exception as e:
+        # Handle errors and update orchestrator state
+        execution_time = time.time() - start_time
+        error_msg = str(e)
+        
+        update_orchestrator_state(
+            execution_id,
+            status="error",
+            errors=[error_msg]
+        )
+        
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": error_msg,
+                "execution_id": execution_id,
+                "execution_time": execution_time
+            }
+        )

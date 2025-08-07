@@ -1,24 +1,149 @@
-from pocketflow import Node
-from utils import call_llm
+from pocketflow import Node{% if agent.parallel %}, AsyncNode{% endif %}
+import yaml
+from utils import call_llm{% if agent.parallel %}, call_llm_async{% endif %}
 
+{% if agent.parallel %}
+class {{ agent.id|classname }}Node(AsyncNode):
+{% else %}
 class {{ agent.id|classname }}Node(Node):
-    """{{ agent.description or 'Generated agent from BMAD' }}"""
+{% endif %}
+    """{{ agent.description or 'Generated agent from BMAD' }}
+    
+    Generated from: preprocessing/agents/{{ agent.id }}.md
+    Memory scope: {{ agent.memory_scope }}
+    Dependencies: {{ agent.wait_for.agents | join(', ') if agent.wait_for.agents else 'none' }}
+    """
+    
+    def __init__(self, max_retries=3, wait=1):
+        """Initialize with cookbook error handling patterns."""
+        super().__init__(max_retries=max_retries, wait=wait)
     
     def prep(self, shared):
-        """Prepare input data for the agent."""
-        return shared.get("input", "")
+        """Prepare input data with dependency checking (pocketflow-communication pattern)."""
+        # Check wait_for dependencies
+        {% if agent.wait_for.agents %}
+        dependencies = {{ agent.wait_for.agents | tojson }}
+        for dependency in dependencies:
+            if f"{dependency}_result" not in shared:
+                raise RuntimeError(f"Dependency not met: {dependency} must complete first")
+        {% endif %}
+        
+        # Get memory-scoped data based on agent configuration
+        {% if agent.memory_scope == 'isolated' %}
+        memory_key = f"{{ agent.id }}_memory"
+        {% else %}
+        memory_key = "shared_memory"
+        {% endif %}
+        
+        return {
+            "input": shared.get("input", ""),
+            "memory": shared.get(memory_key, {}),
+            "dependencies": {
+                {% for dep in agent.wait_for.agents %}
+                "{{ dep }}": shared.get("{{ dep }}_result", None),
+                {% endfor %}
+            }
+        }
     
+    {% if agent.parallel %}
+    async def exec_async(self, prep_res):
+    {% else %}
     def exec(self, prep_res):
-        """Execute the agent with LLM call."""
-        prompt = """{{ agent.prompt_content }}"""
+    {% endif %}
+        """Execute using structured output pattern (pocketflow-structured-output)."""
+        # Base prompt content
+        base_prompt = """{{ agent.prompt_content }}"""
         
-        if prep_res:
-            prompt = prompt + "\n\nInput: " + str(prep_res)
+        # Add dependency context if available
+        context_parts = []
+        if prep_res["input"]:
+            context_parts.append(f"Input: {prep_res['input']}")
         
-        return call_llm(prompt)
+        {% if agent.wait_for.agents %}
+        for dep_name, dep_result in prep_res["dependencies"].items():
+            if dep_result:
+                context_parts.append(f"{dep_name} result: {dep_result}")
+        {% endif %}
+        
+        # Build full prompt with structured output requirements
+        full_prompt = f"""{base_prompt}
+
+{chr(10).join(context_parts) if context_parts else ''}
+
+## Output Requirements
+Please provide your response in YAML format:
+
+```yaml
+thinking: |
+  Your reasoning process here
+result: |
+  Your main response/output here
+confidence: 0.0-1.0  # Confidence in your answer
+next_action: continue  # or 'retry', 'wait', etc.
+```"""
+        
+        # Call LLM with structured prompt
+        {% if agent.parallel %}
+        response = await call_llm_async(full_prompt)
+        {% else %}
+        response = call_llm(full_prompt)
+        {% endif %}
+        
+        # Extract structured output (pocketflow-structured-output pattern)
+        try:
+            yaml_str = response.split("```yaml")[1].split("```")[0].strip()
+            structured_result = yaml.safe_load(yaml_str)
+            
+            # Validation (pocketflow-supervisor pattern)
+            assert structured_result is not None, "Parsed YAML is None"
+            assert "result" in structured_result, "Missing 'result' field"
+            assert "confidence" in structured_result, "Missing 'confidence' field"
+            
+            return structured_result
+            
+        except Exception as e:
+            # Fallback for non-structured responses
+            return {
+                "thinking": "LLM did not follow structured format",
+                "result": response,
+                "confidence": 0.5,
+                "next_action": "continue"
+            }
     
+    def exec_fallback(self, prep_res, exc):
+        """Fallback strategy following cookbook error handling patterns."""
+        return {
+            "thinking": f"Error occurred: {str(exc)}",
+            "result": f"Agent {{ agent.id }} encountered an error and provided fallback response.",
+            "confidence": 0.1,
+            "next_action": "error"
+        }
+    
+    {% if agent.parallel %}
+    async def post_async(self, shared, prep_res, exec_res):
+    {% else %}
     def post(self, shared, prep_res, exec_res):
-        """Store result and return action for flow control."""
-        shared["{{ agent.id }}_result"] = exec_res
-        shared["last_result"] = exec_res
-        return "default"
+    {% endif %}
+        """Store results with proper memory scoping (pocketflow-communication pattern)."""
+        # Store agent-specific result
+        shared["{{ agent.id }}_result"] = exec_res["result"]
+        shared["last_result"] = exec_res["result"]
+        
+        # Update memory based on scope
+        {% if agent.memory_scope == 'isolated' %}
+        memory_key = "{{ agent.id }}_memory"
+        {% else %}
+        memory_key = "shared_memory"
+        {% endif %}
+        
+        if memory_key not in shared:
+            shared[memory_key] = {}
+        
+        shared[memory_key]["last_execution"] = {
+            "timestamp": "{{ agent.id }}_{{ agent.timestamp if agent.timestamp else 'unknown' }}",
+            "confidence": exec_res.get("confidence", 0.5),
+            "thinking": exec_res.get("thinking", ""),
+        }
+        
+        # Return next action for flow control
+        return exec_res.get("next_action", "default")

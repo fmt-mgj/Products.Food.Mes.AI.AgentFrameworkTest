@@ -1,12 +1,21 @@
-"""Utility functions for BMAD PocketFlow runtime."""
-import os
-from openai import OpenAI
+"""Utility functions for BMAD PocketFlow runtime.
 
-# Initialize OpenAI client with API key from environment
+Implements cookbook patterns:
+- Async support for pocketflow-parallel-batch patterns
+- Error handling following cookbook best practices
+- Memory management utilities
+"""
+import asyncio
+import os
+from typing import Dict, Any, Optional
+from openai import OpenAI, AsyncOpenAI
+
+# Initialize OpenAI clients with API key from environment
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+async_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def call_llm(prompt: str, model: str = "gpt-3.5-turbo") -> str:
-    """Call LLM with the given prompt.
+    """Call LLM synchronously (pocketflow-structured-output pattern).
     
     Args:
         prompt: The prompt to send to the LLM
@@ -32,3 +41,103 @@ def call_llm(prompt: str, model: str = "gpt-3.5-turbo") -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         raise Exception(f"LLM API call failed: {e}")
+
+async def call_llm_async(prompt: str, model: str = "gpt-3.5-turbo") -> str:
+    """Call LLM asynchronously (pocketflow-parallel-batch pattern).
+    
+    Args:
+        prompt: The prompt to send to the LLM
+        model: OpenAI model to use
+        
+    Returns:
+        The LLM response text
+        
+    Raises:
+        Exception: If API call fails or API key is missing
+    """
+    if not os.getenv("OPENAI_API_KEY"):
+        raise ValueError("OPENAI_API_KEY environment variable is required")
+    
+    try:
+        response = await async_client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        raise Exception(f"Async LLM API call failed: {e}")
+
+def get_memory_scoped_data(shared: Dict[str, Any], agent_id: str, memory_scope: str = "shared") -> Dict[str, Any]:
+    """Get memory data based on scope (pocketflow-chat-memory pattern).
+    
+    Args:
+        shared: Shared store from PocketFlow
+        agent_id: ID of the requesting agent
+        memory_scope: 'isolated' or 'shared'
+        
+    Returns:
+        Memory data dictionary
+    """
+    if memory_scope == "isolated":
+        memory_key = f"{agent_id}_memory"
+    else:
+        memory_key = "shared_memory"
+    
+    return shared.get(memory_key, {})
+
+def set_memory_scoped_data(shared: Dict[str, Any], agent_id: str, data: Dict[str, Any], 
+                          memory_scope: str = "shared") -> None:
+    """Set memory data based on scope (pocketflow-chat-memory pattern).
+    
+    Args:
+        shared: Shared store from PocketFlow
+        agent_id: ID of the agent setting data
+        data: Data to store
+        memory_scope: 'isolated' or 'shared'
+    """
+    if memory_scope == "isolated":
+        memory_key = f"{agent_id}_memory"
+    else:
+        memory_key = "shared_memory"
+    
+    if memory_key not in shared:
+        shared[memory_key] = {}
+    
+    shared[memory_key].update(data)
+
+def check_dependencies_ready(shared: Dict[str, Any], dependencies: list) -> bool:
+    """Check if all agent dependencies are satisfied (pocketflow-communication pattern).
+    
+    Args:
+        shared: Shared store from PocketFlow
+        dependencies: List of agent IDs that must complete first
+        
+    Returns:
+        True if all dependencies are ready, False otherwise
+    """
+    for dep in dependencies:
+        if f"{dep}_result" not in shared:
+            return False
+    return True
+
+def validate_structured_output(output: Dict[str, Any], required_fields: list) -> bool:
+    """Validate structured output follows expected format (pocketflow-supervisor pattern).
+    
+    Args:
+        output: The structured output to validate
+        required_fields: List of required field names
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    if not isinstance(output, dict):
+        return False
+    
+    for field in required_fields:
+        if field not in output:
+            return False
+    
+    return True
