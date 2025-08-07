@@ -1,0 +1,19 @@
+# railway.toml - KISS configuration for Railway
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "./Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Environment variables set in Railway dashboard
+# OPENAI_API_KEY, MEMORY_BACKEND, etc.
+
+# Railway handles:
+# - Automatic SSL certificates
+# - Custom domains
+# - Environment variable injection
+# - Automatic restarts

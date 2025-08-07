@@ -95,11 +95,10 @@ jobs:
       # Railway deployment
       - name: Deploy to Railway
         if: ${{ vars.DEPLOY_TARGET == 'railway' }}
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: bmad-pocketflow
-          image: ${{ needs.build-and-push.outputs.image-tag }}
+        run: |
+          npm install -g @railway/cli
+          railway login --token ${{ secrets.RAILWAY_TOKEN }}
+          railway up --service bmad-pocketflow
       
       # Fly.io deployment
       - name: Setup Fly.io
@@ -109,20 +108,21 @@ jobs:
       - name: Deploy to Fly.io
         if: ${{ vars.DEPLOY_TARGET == 'flyio' }}
         run: |
-          flyctl deploy --image ${{ needs.build-and-push.outputs.image-tag }}
+          flyctl deploy --config deployment/fly.toml
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       
       # Cloud Run deployment
+      - name: Authenticate to Google Cloud
+        if: ${{ vars.DEPLOY_TARGET == 'cloudrun' }}
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      
       - name: Deploy to Cloud Run
         if: ${{ vars.DEPLOY_TARGET == 'cloudrun' }}
-        uses: google-github-actions/deploy-cloudrun@v1
-        with:
-          service: bmad-pocketflow
-          image: ${{ needs.build-and-push.outputs.image-tag }}
-          region: us-central1
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          gcloud run services replace deployment/cloud-run-service.yaml --region=us-central1
       
       - name: Verify deployment
         run: |

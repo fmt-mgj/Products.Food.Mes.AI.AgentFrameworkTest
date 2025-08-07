@@ -1,16 +1,13 @@
-Jeg vil gerne have, at du implementerer
-  Story [num]]. 
+Jeg vil gerne have, at du implementerer denne story 
   [sti]
   Det er super vigtigt, at du
   overholder KISS princippet, og at du
   sætter dig ind i BMAD og Pocket Flow frameworket.
   
 
-Jeg vil gerne have at du laver et review denne story                                                                                         │
-[sti]]
-│     Det er super vigtigt, at du                                                                                                                 │
-│     overholder KISS princippet, og at du                                                                                                        │
-│     sætter dig ind i BMAD og Pocket Flow frameworket.    
+*review [sti] 
+Det er super vigtigt, at du  
+overholder KISS princippet, og at du sætter dig ind i BMAD og Pocket Flow frameworket.    
 
 
 
@@ -19,3 +16,7 @@ Jeg vil gerne have at du laver et review denne story                            
   Det er super vigtigt, at du
     overholder KISS princippet, og at du
     sætter dig ind i BMAD og Pocket Flow frameworket.
+
+
+FORSIGTIG!!!
+claude --dangerously-skip-permissions
