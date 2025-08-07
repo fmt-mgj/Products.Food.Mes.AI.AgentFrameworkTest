@@ -221,7 +221,7 @@ class TestCLIIntegration:
     def test_cli_with_existing_bmad_files(self):
         """Test CLI with the actual BMAD files in the repository."""
         project_root = Path(__file__).parent.parent.parent
-        bmad_path = project_root / "bmad"
+        bmad_path = project_root / "preprocessing"
         
         # Skip if no bmad directory exists
         if not bmad_path.exists():

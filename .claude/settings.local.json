@@ -14,7 +14,9 @@
       "Bash(find:*)",
       "Bash(pip show:*)",
       "Bash(uvicorn:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

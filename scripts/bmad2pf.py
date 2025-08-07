@@ -77,7 +77,7 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  bmad2pf --src ./bmad --out ./generated
+  bmad2pf --src ./preprocessing --out ./generated
   bmad2pf --src ./agents --out ./output --verbose
   bmad2pf --help
         """.strip()
@@ -86,8 +86,8 @@ Examples:
     parser.add_argument(
         "--src",
         type=Path,
-        default=Path("./bmad"),
-        help="Source directory containing BMAD files (default: ./bmad)"
+        default=Path("./preprocessing"),
+        help="Source directory containing preprocessing files (default: ./preprocessing)"
     )
 
     parser.add_argument(
@@ -115,8 +115,8 @@ Examples:
         # Validate directories
         validate_directories(args.src, args.out)
 
-        # Stage 1: Parse BMAD files
-        print_progress(f"Parsing BMAD files from {args.src}...", args.verbose)
+        # Stage 1: Parse preprocessing files
+        print_progress(f"Parsing preprocessing files from {args.src}...", args.verbose)
         parse_start = time.perf_counter()
 
         agents_dict = parse_agents_directory(args.src)
@@ -173,7 +173,7 @@ Examples:
         return 0
 
     except ParsingError as e:
-        print_error(f"Error parsing BMAD file: {e}")
+        print_error(f"Error parsing preprocessing file: {e}")
         return 2
     except FileNotFoundError as e:
         print_error(f"File not found: {e}")

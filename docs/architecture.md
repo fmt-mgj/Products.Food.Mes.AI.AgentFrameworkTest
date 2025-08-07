@@ -34,6 +34,76 @@ graph TB
     end
 ```
 
+## Preprocessing Format Specification
+
+### Overview
+
+The preprocessing format is a simplified, deterministic subset designed for manual creation by developers who understand BMAD methodology. It preserves BMAD terminology while being simple enough for direct conversion to PocketFlow.
+
+### Agent Definition Structure (v2.0)
+
+```yaml
+---
+# Core metadata (required)
+id: agent_name
+description: "Agent purpose and role"
+
+# BMAD terminology preservation (optional)
+tasks: ["analyze_requirements.md", "validate_stories.md"]
+checklists: ["quality_checklist.md", "completeness_check.md"]
+templates: ["story_template.md", "report_template.md"]
+commands: ["*analyze", "*validate", "*report"]
+persona: "Senior analyst with 10+ years experience"
+
+# Execution configuration (optional)
+tools: ["text_splitter", "validator"]
+memory_scope: isolated  # or "shared:namespace"
+wait_for:
+  docs: ["requirements.md", "constraints.md"]
+  agents: ["analyst", "architect"]
+parallel: false
+---
+
+# Agent Prompt
+
+You are a {{persona or role description}}.
+
+## Your Tasks
+{{Expanded from tasks list}}
+
+## Available Commands
+{{Expanded from commands list}}
+
+## Context
+You have access to: {{docs from wait_for}}
+Previous agents completed: {{agents from wait_for}}
+
+## Instructions
+[Main prompt content here]
+
+## Output Format
+[Expected output structure]
+```
+
+### Key Differences from Full BMAD
+
+| Aspect | Full BMAD (Out of Scope) | Preprocessing Format (In Scope) |
+|--------|--------------------------|----------------------------------|
+| Complexity | Complex multi-file workflows | Single file per agent |
+| References | Dynamic resolution | Static, explicit paths |
+| Templates | Complex substitution | Simple variable replacement |
+| Workflows | Graph-based with conditions | Linear with simple dependencies |
+| Tools | Abstract capabilities | Direct function mappings |
+| Memory | Complex scoping rules | Two scopes: isolated or shared |
+
+### Preprocessing Benefits
+
+1. **Human-Readable**: Developers can easily understand and modify
+2. **BMAD-Compatible**: Preserves terminology and concepts
+3. **Deterministic**: No ambiguity in conversion to PocketFlow
+4. **Version-Controlled**: Plain text files work well with Git
+5. **Fast Generation**: Simple parsing enables <1 second generation
+
 ## System Context
 
 ### External Systems
@@ -49,7 +119,7 @@ graph TB
    - Data Flow: HTTP requests, logs, metrics
 
 3. **Version Control** (GitHub)
-   - Purpose: Store BMAD source files and trigger CI/CD
+   - Purpose: Store preprocessing source files and trigger CI/CD
    - Interface: Git operations and GitHub Actions
    - Data Flow: Code commits, build artifacts
 
@@ -365,7 +435,7 @@ API endpoints and performance targets are specified in the [PRD API Specificatio
 
 The complete source tree structure is documented in [source-tree.md](./architecture/source-tree.md). The project follows a clear separation between:
 
-- **User-editable sources** (`/bmad/`)
+- **User-editable sources** (`/preprocessing/`)
 - **Generated code** (`/generated/`)
 - **Runtime data** (`/memory/`, `/docs/`)
 - **Configuration** (`/config/`)
@@ -383,7 +453,7 @@ See the source tree document for complete directory structure, file naming conve
 ### Testing Strategy
 
 **Unit Tests** (`tests/unit/`)
-- Parser logic for BMAD files
+- Parser logic for preprocessing files
 - Template rendering accuracy
 - Memory isolation verification
 - Document CRUD operations
@@ -401,7 +471,7 @@ See the source tree document for complete directory structure, file naming conve
 - Concurrent request handling
 
 **Test Data** (`tests/fixtures/`)
-- Sample BMAD files
+- Sample preprocessing files
 - Mock LLM responses
 - Test documents
 - Configuration variants
@@ -438,15 +508,15 @@ async def call_llm(prompt: str) -> str:
     pass
 
 # Error hierarchy
-class BMADError(Exception):
-    """Base for all BMAD errors"""
+class PreprocessingError(Exception):
+    """Base for all preprocessing errors"""
     pass
 
-class GeneratorError(BMADError):
+class GeneratorError(PreprocessingError):
     """Generation-time errors"""
     pass
 
-class RuntimeError(BMADError):
+class RuntimeError(PreprocessingError):
     """Runtime execution errors"""
     pass
 
@@ -497,18 +567,18 @@ def get_llm_provider() -> LLMProvider:
 **Generated Code Management**:
 - `/generated/` directory is **never** committed to version control
 - Each generation completely replaces previous content
-- No versioning needed - BMAD sources are the single source of truth
-- Rollback = checkout previous BMAD files + regenerate
+- No versioning needed - preprocessing files are the single source of truth
+- Rollback = checkout previous preprocessing files + regenerate
 
 **Deployment Safety**:
-1. CI/CD always regenerates from BMAD sources
+1. CI/CD always regenerates from preprocessing sources
 2. Docker build includes generation step
 3. No manual edits to generated code survive deployment
 4. Configuration (`runtime.yaml`) is preserved across regenerations
 
 ```bash
 # Regeneration is always safe and idempotent
-python scripts/bmad2pf.py --src ./bmad --out ./generated
+python scripts/bmad2pf.py --src ./preprocessing --out ./generated
 # Previous generated code is completely replaced
 ```
 
@@ -573,10 +643,10 @@ Performance targets are defined in the [PRD Performance Requirements](../prd.md#
 # Multi-stage Dockerfile
 FROM python:3.10-slim as generator
 WORKDIR /app
-COPY bmad/ ./bmad/
+COPY preprocessing/ ./preprocessing/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
-RUN python scripts/bmad2pf.py --src ./bmad --out ./generated
+RUN python scripts/bmad2pf.py --src ./preprocessing --out ./generated
 
 FROM python:3.10-slim
 WORKDIR /app

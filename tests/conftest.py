@@ -28,7 +28,7 @@ def test_data_dir():
 @pytest.fixture
 def temp_bmad_dir(tmp_path):
     """Temporary BMAD directory for testing."""
-    bmad_dir = tmp_path / "bmad"
+    bmad_dir = tmp_path / "preprocessing"
     bmad_dir.mkdir()
     (bmad_dir / "agents").mkdir()
     (bmad_dir / "checklists").mkdir()

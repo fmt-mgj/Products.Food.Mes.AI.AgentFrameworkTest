@@ -85,7 +85,7 @@ def temp_dirs():
     temp_dir = tempfile.mkdtemp()
     memory_dir = Path(temp_dir) / "memory"
     docs_dir = Path(temp_dir) / "docs"
-    bmad_dir = Path(temp_dir) / "bmad"
+    bmad_dir = Path(temp_dir) / "preprocessing"
 
     memory_dir.mkdir()
     docs_dir.mkdir()

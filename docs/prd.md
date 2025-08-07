@@ -4,30 +4,44 @@
 
 ### Goals
 
-- Enable rapid conversion of BMAD methodology artifacts (Markdown prompts, checklists, YAML workflows) into executable PocketFlow code in under 1 second
+**Primary Goals:**
+- Provide an enhanced preprocessing format (v2.0) that preserves BMAD terminology (tasks, checklists, templates, commands, personas) while ensuring production-ready deterministic execution
+- Provide an ultra-simple orchestrator for stateless agent execution with external system control
+- Enable manual creation of sophisticated agent workflows using familiar BMAD concepts in a simplified, deterministic format
+
+**Secondary Goals:**
 - Provide a stateless FastAPI microservice runtime that can be deployed as a Docker container to any platform (local, Railway, Fly.io, Cloud Run)
 - Deliver dynamic Markdown documentation via REST API for frontend display/editing and downstream agent consumption
-- Support per-agent memory isolation, optional parallel execution, and simple observability without requiring developer modifications to generator code
+- Support structured agent outputs with status tracking (completed|needs_input|failed)
 - Establish a KISS (Keep It Simple, Stupid) development approach with minimal dependencies and maximum flexibility
-- Create a bridge between human-designed high-level BMAD workflows and AI-implemented PocketFlow execution details
 
 ### Background Context
 
-The BMAD methodology provides a comprehensive framework for defining agent-based workflows through Markdown prompts, checklists, and workflow definitions. However, there is currently no automated way to transform these human-readable artifacts into executable code. This project addresses that gap by creating a lightweight generator that converts BMAD artifacts into PocketFlow code - a minimalist 100-line LLM framework designed for building complex AI applications using simple graph-based patterns.
+**Enhanced Preprocessing Format Challenge:**
+The current simple preprocessing format lacks the expressiveness needed to capture sophisticated agent workflows inspired by BMAD methodology. Users familiar with BMAD concepts (tasks, checklists, templates, personas, commands) need a more powerful input format while maintaining the deterministic execution guarantees required for production systems.
 
-The solution follows an "Agentic Coding" philosophy where humans focus on high-level flow design while AI agents handle implementation details. By automating the conversion process and providing a standardized runtime, teams can rapidly iterate on agent workflows without dealing with boilerplate code or deployment complexity. The entire stack prioritizes simplicity over features, using only essential Python dependencies and Markdown as the universal document format.
+**Two-Layer Architecture Solution:**
+1. **Enhanced Preprocessing Layer (preprocessing/ v2.0)**: Sophisticated, manually-created agent format that preserves BMAD terminology while ensuring deterministic execution
+2. **PocketFlow Runtime**: Enhanced 100-line framework with ultra-simple orchestration and stateless agent execution
+
+**Manual Creation Approach:**
+Users manually create preprocessing agents using the enhanced v2.0 format, drawing inspiration from BMAD methodology but within the constraints of deterministic execution. This approach ensures complete control over complexity while enabling sophisticated workflows.
+
+The solution follows an "Agentic Coding" philosophy where humans design high-level flows and the system generates deterministic executable code. The entire stack prioritizes simplicity over features, using only essential Python dependencies and Markdown as the universal document format.
 
 ### Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|---------|
 | 2025-08-06 | 0.31 | Initial PRD creation based on design document | John (PM Agent) |
+| 2025-08-07 | 0.40 | Major scope expansion: BMAD-to-Preprocessing conversion, Ultra-simple orchestrator, Stateless agents, Enhanced preprocessing format | John (PM Agent) |
 
 ## Requirements
 
 ### Functional
 
-- FR1: The CLI generator shall parse BMAD Markdown files with optional YAML front-matter to extract agent metadata, tools, memory scope, dependencies, and parallel execution settings
+**Core Preprocessing & Generation:**
+- FR1: The CLI generator shall parse preprocessing Markdown files (formerly bmad/) with enhanced YAML front-matter to extract agent metadata, BMAD terminology (tasks, checklists, templates, commands), and execution settings
 - FR2: The system shall support optional workflow.yaml files for defining agent execution sequences when not specified in front-matter
 - FR3: The generator shall load and register custom tools from an optional tools.yaml file as PocketFlow @utool decorators
 - FR4: The runtime shall expose a /run endpoint accepting flow name, input text, and story_id, returning either streamed results or pending document lists
@@ -429,6 +443,146 @@ All BMAD source files, generator, runtime, and configuration exist in a single r
 7: OpenTelemetry hooks prepared (but not required) for APM integration
 8: Log aggregation pattern documented for production environments
 
+## Epic 5: Enhanced Preprocessing Format v2.0
+
+**Goal**: Design and implement enhanced preprocessing format that preserves BMAD terminology (tasks, checklists, templates, personas, commands) for manual agent creation, enabling sophisticated workflow definition while maintaining deterministic execution and KISS principles.
+
+### Story 5.1: Enhanced Preprocessing Template Design
+
+**As a** developer familiar with BMAD methodology,
+**I want** an enhanced preprocessing format that preserves familiar BMAD terminology and concepts,
+**so that** I can manually create sophisticated agent workflows using familiar patterns while ensuring deterministic PocketFlow execution.
+
+#### Acceptance Criteria
+
+1. **BMAD Terminology Preservation**: Format includes `persona`, `tasks`, `checklists`, `templates`, `commands` fields that map directly to familiar BMAD concepts
+2. **Cookbook Pattern Integration**: Template design incorporates proven patterns from PocketFlow cookbook examples (stateless execution, structured outputs, external control)
+3. **Schema Validation**: Complete JSON schema defined for preprocessing format v2.0 with clear validation rules and error messaging
+4. **Documentation and Examples**: Comprehensive documentation with 5+ example agents covering common patterns (analyst, PM, architect, QA)
+5. **Backward Compatibility**: Enhanced format v2.0 maintains full compatibility with existing v1.0 simple format
+6. **Manual Creation Support**: Format optimized for human readability and editability with clear YAML structure
+7. **Generator Integration**: Enhanced parser implemented that can process v2.0 format and generate appropriate PocketFlow Node classes
+8. **Validation Tooling**: Command-line validation tool that checks preprocessing agents against schema and provides helpful error correction guidance
+
+#### Technical Notes
+
+- Template should map BMAD `tasks` to PocketFlow Node execution patterns
+- `checklists` should integrate with structured output validation
+- `templates` should support Jinja2-style placeholders for dynamic content
+- `persona` should be injectable into agent prompt templates
+- Focus on simplicity - avoid over-engineering complex features
+
+### Story 5.2: Cookbook Pattern Mapping and Integration
+
+**As a** system architect,
+**I want** the preprocessing format to leverage proven PocketFlow cookbook patterns,
+**so that** generated agents follow established, tested execution patterns rather than creating new untested approaches.
+
+#### Acceptance Criteria
+
+1. **Stateless Execution Mapping**: Enhanced format generates agents following `pocketflow-structured-output/` stateless pattern
+2. **External Control Integration**: Generated orchestration follows `pocketflow-communication/` external control pattern
+3. **Validation Pattern Usage**: Checklist functionality uses `pocketflow-supervisor/` validation pattern
+4. **Error Handling**: Generated agents use cookbook error handling patterns with retry logic
+5. **Performance Optimization**: Template generation follows cookbook performance patterns for sub-1s generation time
+6. **Testing Integration**: Generated agents compatible with cookbook testing patterns from `pocketflow-workflow/` examples
+7. **Documentation Mapping**: Clear documentation showing which BMAD concepts map to which cookbook patterns
+8. **Pattern Validation**: Validation tools verify that generated agents follow established cookbook patterns correctly
+
+#### Technical Notes
+
+- Reuse existing cookbook Node classes where possible rather than generating new ones
+- Ensure generated agents are compatible with existing PocketFlow Flow orchestration
+- Maintain cookbook naming conventions and code style
+
+### Story 5.3: Ultra-Simple Orchestrator Status Tracking
+
+**As an** external workflow system,
+**I want** a minimal orchestrator that only tracks agent execution status without embedded business logic,
+**so that** I can control workflow execution decisions while getting clear visibility into agent states.
+
+#### Acceptance Criteria
+
+1. **Status-Only API**: Orchestrator provides GET/PUT endpoints for status tracking without any execution decision logic
+2. **External System Control**: All workflow decisions (retry, parallel execution, error handling) made by external systems
+3. **Structured Status Objects**: Status tracking uses clear JSON format: `{workflow_id, agent_statuses: {agent_id: {status, last_execution, output_summary}}}`
+4. **Real-time Updates**: Status updates available immediately after agent execution via REST API
+5. **No Embedded Logic**: Orchestrator contains zero business logic for flow control, dependencies, or error recovery
+6. **Multiple Workflow Support**: Can track status for multiple concurrent workflows without interference
+7. **Simple Persistence**: Status stored in file-based format (JSONL) following KISS principle
+8. **Clear API Documentation**: OpenAPI specification for external system integration
+
+### Story 5.4: Stateless Agent Execution with Structured Outputs
+
+**As an** external workflow system,
+**I want** agents that execute in completely stateless mode with predictable structured outputs,
+**so that** I can provide complete context per call and receive consistent, parseable responses for workflow orchestration.
+
+#### Acceptance Criteria
+
+1. **Complete Context Per Call**: Every agent execution receives full context (documents, previous results, instructions) in single request
+2. **Structured Response Format**: All agents return consistent format: `{status: "completed|needs_input|failed", content: str, summary: str, missing_inputs: [str], metadata: dict}`
+3. **No Session State**: Agents maintain no state between executions - identical inputs produce identical outputs
+4. **Mid-Execution Input Requests**: Agents can return `needs_input` status with explicit list of missing requirements
+5. **Error Handling**: Failed executions return structured error information in standard format
+6. **Performance Consistency**: Stateless execution maintains sub-1s generation performance requirement
+7. **Memory Isolation**: Each execution isolated from others while supporting optional shared memory scopes
+8. **Validation Integration**: All outputs validated against structured format with clear error messages
+
+#### Technical Notes
+
+- Leverage cookbook stateless patterns from `pocketflow-agent/` and `pocketflow-structured-output/`
+- Ensure compatibility with existing FastAPI runtime infrastructure
+- Maintain backward compatibility with existing stateful agents
+
+## Epic 6: Ultra-Simple Orchestrator
+
+**Goal**: Implement minimal orchestrator that only tracks workflow status without embedded business logic, enabling complete external system control while maintaining KISS principles.
+
+### Story 6.1: Status-Only Orchestration API
+
+**As an** external workflow engine,
+**I want** a minimal REST API that only tracks agent execution status,
+**so that** I can make all workflow decisions while getting clear visibility into execution states.
+
+#### Acceptance Criteria
+
+1. **GET /orchestration/status**: Returns workflow status with agent states in JSON format
+2. **PUT /orchestration/status**: Allows external systems to update agent execution status
+3. **No Business Logic**: Orchestrator contains zero logic for flow control, retries, or error handling
+4. **File-Based Storage**: Status persisted in JSONL format following KISS principle
+5. **Multi-Workflow Support**: Can track multiple concurrent workflows without interference
+6. **Real-Time Updates**: Status changes immediately visible via API
+7. **Simple Data Model**: Status format: `{workflow_id, story_id, agent_statuses: {agent_id: {status, last_execution}}}`
+8. **OpenAPI Documentation**: Complete API specification for external system integration
+
+## Epic 7: Stateless Agent Architecture
+
+**Goal**: Implement completely stateless agent execution with structured outputs and complete context per call, ensuring predictable and reproducible behavior.
+
+### Story 7.1: Stateless Agent Execution Engine
+
+**As an** external system,
+**I want** agents that execute with complete context provided in each call,
+**so that** I get predictable, reproducible results without hidden state dependencies.
+
+#### Acceptance Criteria
+
+1. **POST /agent/{agent_id}/execute**: Stateless execution endpoint with complete context per request
+2. **Complete Context Input**: Every call includes full context: `{instruction, documents, context_data, execution_id}`
+3. **Structured Response**: All agents return: `{status: "completed|needs_input|failed", content, summary, missing_inputs, metadata}`
+4. **No Session State**: Identical inputs always produce identical outputs regardless of execution history
+5. **Mid-Execution Input Requests**: Agents can return `needs_input` with explicit missing requirements list
+6. **Error Handling**: Failed executions return structured error information in standard format
+7. **Performance**: Stateless execution maintains sub-1s performance requirement
+8. **Validation**: All outputs validated against structured format with clear error messages
+
+#### Technical Notes
+
+- Use cookbook patterns from `pocketflow-structured-output/` and `pocketflow-agent/`
+- Maintain compatibility with existing FastAPI infrastructure
+- Ensure backward compatibility with existing stateful execution mode
+
 ## Checklist Results Report
 
 ### Executive Summary
@@ -524,3 +678,163 @@ The MVP scope is appropriately sized:
 ### Architect Prompt
 
 "Create a technical architecture document for the BMAD → PocketFlow Generator based on the PRD in docs/prd.md. Design the system components, define the code generation pipeline, specify the FastAPI application structure, and detail the memory management implementation. Ensure the architecture supports sub-1 second generation time and maintainable generated code."
+
+---
+
+# SCOPE EXPANSION - VERSION 0.40
+
+## Enhanced Goals and Requirements
+
+**CRITICAL UPDATE**: Following detailed analysis of BMAD methodology complexity and PocketFlow limitations, the scope has been expanded to include a preprocessing layer and enhanced orchestration capabilities.
+
+### Additional Functional Requirements
+
+**Enhanced Preprocessing Format (Epic 5 - Scope Revised):**
+- FR16: The preprocessing format v2.0 shall preserve BMAD terminology (tasks, checklists, templates, commands, personas) while ensuring deterministic execution
+- FR17: The system shall support manual creation of sophisticated agent workflows using the enhanced preprocessing format
+- FR18: The enhanced format shall provide clear validation and error messaging for manually created agent definitions
+
+**Ultra-Simple Orchestrator (New Epic 6):**
+- FR19: The runtime shall provide an ultra-simple orchestrator that only tracks workflow status without making execution decisions
+- FR20: External systems shall control agent execution order, parallel execution, and error handling through orchestrator status updates
+- FR21: The orchestrator shall expose workflow status via structured JSON objects containing completed/pending/failed agent states
+
+**Stateless Agent Execution (New Epic 7):**
+- FR22: All agents shall execute in stateless mode with complete context provided in each call
+- FR23: Agent outputs shall follow structured format: {status: "completed|needs_input|failed", content: str, summary: str, missing_inputs: [str], metadata: dict}
+- FR24: Agents shall return immediately with "needs_input" status when requiring additional documents or context
+- FR25: The system shall support mid-execution document requests without maintaining session state
+
+### Additional Non-Functional Requirements
+
+**Architectural Simplicity:**
+- NFR11: The preprocessing format must be human-readable and editable with clear YAML structure
+- NFR12: Manual preprocessing agent creation must be supported with comprehensive validation and clear error messaging
+- NFR13: Orchestrator complexity must remain minimal with no embedded business logic or decision-making capabilities
+- NFR14: Agent execution must be completely reproducible with identical inputs producing identical outputs
+
+### Enhanced Epic List
+
+**New Epics (Extensions to Existing System):**
+
+- **Epic 5: Enhanced Preprocessing Format v2.0**: Design and implement enhanced preprocessing format that preserves BMAD terminology (tasks, checklists, templates, personas) for manual agent creation, with comprehensive validation and developer-friendly tooling
+
+- **Epic 6: Ultra-Simple Orchestrator**: Replace complex orchestration logic with minimal status-tracking orchestrator controlled by external systems, enabling flexible execution patterns without embedded complexity
+
+- **Epic 7: Stateless Agent Architecture**: Refactor agent execution to stateless model with structured outputs, complete context passing, and mid-execution input requests for maximum predictability and debuggability
+
+## Preprocessing Format Specification (Version 2.0)
+
+### Enhanced Agent Definition Structure
+
+```yaml
+---
+id: agent_name
+description: "Agent purpose and role"
+
+# BMAD Terminology Preservation
+tasks: ["task1.md", "task2.md"]           # References to task files
+checklists: ["validation.md"]             # Validation workflows
+templates: ["output_template.md"]         # Output formatters  
+commands: ["*analyze", "*create"]         # Specific agent commands
+persona: "Senior analyst with 10+ years experience"
+
+# Document Management
+creates: ["output.md"]                    # Documents this agent produces
+requires: ["input1.md", "input2.md"]     # Required input documents
+reads: ["reference.md"]                  # Read-only document access
+updates: ["existing.md"]                 # Documents to modify
+
+# Execution Control
+sequence:
+  - step: "analyze_input"
+    condition: "input_exists"  
+    action: "llm_call"
+    template: "analysis_prompt.txt"
+  - step: "create_output"
+    action: "create_document"
+    template: "output_template.md"
+
+# Runtime Configuration
+tools: ["web_search", "calculator"]
+memory_scope: "isolated|shared" 
+timeout: 120
+retry_count: 3
+error_handling: "continue|stop|fallback"
+parallel: false
+
+# Legacy Support (maintain backward compatibility)
+wait_for:
+  docs: []
+  agents: []
+---
+
+{Enhanced prompt template with BMAD terminology placeholders}
+You are a {persona}.
+Execute these tasks: {tasks}
+Use this checklist: {checklists}
+Follow this template: {templates}
+```
+
+### Directory Structure Enhancement
+
+```
+preprocessing/
+├── agents/           # Enhanced agent definitions (v2.0 format)
+├── workflows/        # Multi-step workflow definitions
+├── tasks/           # Reusable task definitions from BMAD
+├── checklists/      # Validation checklists from BMAD  
+├── templates/       # Document templates from BMAD
+├── commands/        # Custom command definitions
+└── personas/        # Reusable persona definitions
+```
+
+## Manual Preprocessing Creation Strategy
+
+### Enhanced Format Approach
+
+**Manual Creation with BMAD-Inspired Terminology**
+- Users manually create preprocessing agents using enhanced v2.0 format
+- Preserve familiar BMAD concepts (tasks, checklists, templates, personas) within deterministic constraints
+- Comprehensive validation ensures format correctness and runtime compatibility
+- Developer tooling assists with format validation and testing
+
+**Validation and Support Tooling**
+- Schema validation for preprocessing format v2.0
+- Integration testing tools for agent validation
+- Documentation and examples for common patterns
+- Clear error messaging and correction guidance
+
+### Manual Creation Process Flow
+
+```mermaid
+graph TD
+    A[BMAD Inspiration] --> B[Manual Agent Creation]
+    B --> C[Preprocessing Format v2.0]
+    C --> D[Validation Tools]
+    D --> E{Format Valid?}
+    E -->|Yes| F[PocketFlow Generation]
+    E -->|No| G[Error Correction]
+    G --> C
+    F --> H[Runtime Deployment]
+```
+
+## Impact on Existing System
+
+**NO CHANGES to Existing Epics 1-4**: All current functionality remains unchanged. New epics extend the system with additional capabilities.
+
+**Backward Compatibility**: Current simple preprocessing format (version 1.0) continues to work. New format (version 2.0) adds capabilities without breaking existing agents.
+
+**Migration Path**: Existing preprocessing agents can be gradually enhanced to use new features. No forced migration required.
+
+## Success Criteria for Enhanced Scope
+
+1. **BMAD-Inspired Format**: Enhanced preprocessing format v2.0 preserves familiar BMAD terminology while ensuring deterministic execution
+2. **Sub-Second Performance Maintained**: Enhanced preprocessing format generation completes in under 1 second
+3. **External System Integration**: Ultra-simple orchestrator enables seamless external system control
+4. **Deterministic Execution**: Stateless agents produce predictable, reproducible outputs
+5. **Manual Creation Support**: Comprehensive tooling and validation supports efficient manual agent creation
+
+---
+
+**VERSION 0.40 SUMMARY**: This scope expansion provides an enhanced preprocessing format inspired by BMAD methodology terminology while maintaining deterministic execution guarantees. The enhancement maintains backward compatibility while enabling sophisticated manually-created agent workflows with ultra-simple orchestration and stateless execution patterns.

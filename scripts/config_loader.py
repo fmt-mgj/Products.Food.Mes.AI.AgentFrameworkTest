@@ -1,4 +1,4 @@
-"""Configuration Loader for BMAD Workflow and Tools.
+"""Configuration Loader for Preprocessing Workflow and Tools.
 
 This module loads optional workflow.yaml and tools.yaml configuration files
 for agent orchestration and tool registration, following KISS principles.
@@ -98,7 +98,7 @@ def load_tools(tools_path: Path) -> ToolConfig:
     """Load tools configuration from YAML file.
 
     Args:
-        tools_path: Path to tools YAML file (typically bmad/tools.yaml).
+        tools_path: Path to tools YAML file (typically preprocessing/tools.yaml).
 
     Returns:
         ToolConfig object with tool definitions.
@@ -247,11 +247,11 @@ def validate_configuration(config: Dict) -> List[str]:
     return errors
 
 
-def load_all_configurations(bmad_dir: Path, agents_dict: Dict) -> Dict:
+def load_all_configurations(preprocessing_dir: Path, agents_dict: Dict) -> Dict:
     """Load all configurations and merge with agent metadata.
 
     Args:
-        bmad_dir: Root BMAD directory containing agents/, workflows/, tools.yaml.
+        preprocessing_dir: Root preprocessing directory containing agents/, workflows/, tools.yaml.
         agents_dict: Dictionary of agent metadata from parser.
 
     Returns:
@@ -261,9 +261,9 @@ def load_all_configurations(bmad_dir: Path, agents_dict: Dict) -> Dict:
         ValueError: If configuration is invalid.
     """
     # Define paths
-    workflows_dir = bmad_dir / 'workflows'
+    workflows_dir = preprocessing_dir / 'workflows'
     default_workflow = workflows_dir / 'default.yaml'
-    tools_file = bmad_dir / 'tools.yaml'
+    tools_file = preprocessing_dir / 'tools.yaml'
 
     # Load configurations
     workflow_config = load_workflow(default_workflow)

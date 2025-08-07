@@ -42,9 +42,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ❌ **Core Config** (`.bmad-core/core-config.yaml`) - Framework configuration
 
 **ONLY DEVELOP:**
-- ✅ **Generator** (`scripts/bmad2pf.py` and related) - The converter from BMAD to PocketFlow
+- ✅ **Generator** (`scripts/bmad2pf.py` and related) - The converter from preprocessing to PocketFlow
 - ✅ **Runtime** (`generated/app.py` and templates) - The FastAPI runtime for agents
-- ✅ **Project BMAD Files** (`bmad/`) - User's specific agent definitions
+- ✅ **Project Preprocessing Files** (`preprocessing/`) - User's specific agent definitions
 - ✅ **Documentation** (`docs/`) - PRD, Architecture, and related docs
 
 ## Repository Overview
@@ -63,13 +63,13 @@ The project uses PocketFlow as the underlying execution framework but does NOT m
 ### Generator Commands
 ```bash
 # Generate PocketFlow code from BMAD files
-python scripts/bmad2pf.py --src ./bmad --out ./generated
+python scripts/bmad2pf.py --src ./preprocessing --out ./generated
 
 # Validate BMAD files without generating
-python scripts/bmad2pf.py --src ./bmad --check
+python scripts/bmad2pf.py --src ./preprocessing --check
 
 # Generate with verbose output
-python scripts/bmad2pf.py --src ./bmad --out ./generated --verbose
+python scripts/bmad2pf.py --src ./preprocessing --out ./generated --verbose
 ```
 
 ### Runtime Commands

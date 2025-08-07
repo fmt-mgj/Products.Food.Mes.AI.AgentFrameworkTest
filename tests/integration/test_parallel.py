@@ -17,7 +17,7 @@ async def temp_project_structure():
     temp_dir = Path(tempfile.mkdtemp())
     
     # Create directory structure
-    (temp_dir / "bmad" / "agents").mkdir(parents=True)
+    (temp_dir / "preprocessing" / "agents").mkdir(parents=True)
     (temp_dir / "generated" / "agents").mkdir(parents=True)
     (temp_dir / "config").mkdir(parents=True)
     
@@ -64,9 +64,9 @@ parallel: false
 You are a sequential agent that depends on parallel agents.
 """
     
-    (temp_dir / "bmad" / "agents" / "parallel_agent1.md").write_text(agent1_content)
-    (temp_dir / "bmad" / "agents" / "parallel_agent2.md").write_text(agent2_content)
-    (temp_dir / "bmad" / "agents" / "sequential_agent.md").write_text(agent3_content)
+    (temp_dir / "preprocessing" / "agents" / "parallel_agent1.md").write_text(agent1_content)
+    (temp_dir / "preprocessing" / "agents" / "parallel_agent2.md").write_text(agent2_content)
+    (temp_dir / "preprocessing" / "agents" / "sequential_agent.md").write_text(agent3_content)
     
     # Create runtime config
     config_content = """on_missing_doc: skip

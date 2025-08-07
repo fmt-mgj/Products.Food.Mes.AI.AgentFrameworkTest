@@ -16,21 +16,34 @@ logger = logging.getLogger(__name__)
 
 
 class AgentMetadata(BaseModel):
-    """Agent metadata model with validation."""
+    """Agent metadata model with validation for both v1.0 and v2.0 formats."""
 
+    # Core required fields (v1.0 compatibility)
     id: str
     description: Optional[str] = ""
+    
+    # v2.0 BMAD terminology fields
+    persona: Optional[str] = ""
+    tasks: List[str] = []
+    checklists: List[str] = []
+    templates: List[str] = []
+    commands: List[str] = []
+    
+    # Execution configuration
     tools: List[str] = []
     memory_scope: str = "isolated"
     wait_for: Dict[str, List[str]] = {"docs": [], "agents": []}
     parallel: bool = False
+    
+    # Format version detection
+    format_version: str = "1.0"
 
     @field_validator("memory_scope")
     def validate_memory_scope(cls, v):
-        """Validate memory scope is either 'isolated' or 'shared'."""
-        if v not in ["isolated", "shared"]:
-            raise ValueError("memory_scope must be 'isolated' or 'shared'")
-        return v
+        """Validate memory scope is either 'isolated' or 'shared' or 'shared:namespace'."""
+        if isinstance(v, str) and (v == "isolated" or v == "shared" or v.startswith("shared:")):
+            return v
+        raise ValueError("memory_scope must be 'isolated', 'shared', or 'shared:namespace'")
 
     @field_validator("id")
     def validate_id(cls, v):
@@ -38,6 +51,19 @@ class AgentMetadata(BaseModel):
         if not v or not v.strip():
             raise ValueError("Agent id is required and cannot be empty")
         return v.strip()
+    
+    @field_validator("format_version")
+    def validate_format_version(cls, v):
+        """Validate format version is supported."""
+        if v not in ["1.0", "2.0"]:
+            raise ValueError("format_version must be '1.0' or '2.0'")
+        return v
+    
+    def is_v2_format(self) -> bool:
+        """Check if this is a v2.0 format with BMAD terminology."""
+        return (self.format_version == "2.0" or 
+                bool(self.persona or self.tasks or self.checklists or 
+                     self.templates or self.commands))
 
 
 class ParsingError(Exception):
@@ -132,6 +158,12 @@ def parse_markdown_file(file_path: Path) -> tuple[AgentMetadata, str]:
             metadata_dict = {"id": file_path.stem}
         elif not metadata_dict.get("id"):
             metadata_dict["id"] = file_path.stem
+
+        # Auto-detect format version if not specified
+        if "format_version" not in metadata_dict:
+            has_bmad_fields = any(field in metadata_dict for field in 
+                                ["persona", "tasks", "checklists", "templates", "commands"])
+            metadata_dict["format_version"] = "2.0" if has_bmad_fields else "1.0"
 
         # Create validated metadata object
         metadata = AgentMetadata(**metadata_dict)

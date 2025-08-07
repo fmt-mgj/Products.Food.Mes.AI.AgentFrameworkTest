@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bmad.ai/schemas/preprocessing-v2.json",
+  "title": "BMAD Preprocessing Format v2.0",
+  "description": "Enhanced preprocessing format with BMAD terminology for agent definitions",
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Unique agent identifier (alphanumeric, underscore, hyphen only)",
+      "examples": ["analyst", "pm_reviewer", "qa-specialist"]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Brief description of agent purpose and role",
+      "examples": ["Senior business analyst with expertise in requirements gathering"]
+    },
+    "format_version": {
+      "type": "string",
+      "enum": ["1.0", "2.0"],
+      "default": "2.0",
+      "description": "Format version for backward compatibility"
+    },
+    "persona": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Agent personality and expertise context for LLM prompts",
+      "examples": ["Senior software architect with 15+ years experience in system design"]
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+\\.md$",
+        "description": "Task definition file name"
+      },
+      "uniqueItems": true,
+      "maxItems": 10,
+      "description": "List of task definition files (.md) to reference",
+      "examples": [["analyze_requirements.md", "create_stories.md"]]
+    },
+    "checklists": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+\\.md$",
+        "description": "Checklist file name"
+      },
+      "uniqueItems": true,
+      "maxItems": 5,
+      "description": "List of validation checklist files (.md) to apply",
+      "examples": [["quality_checklist.md", "completeness_check.md"]]
+    },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+\\.md$",
+        "description": "Template file name"
+      },
+      "uniqueItems": true,
+      "maxItems": 5,
+      "description": "List of output template files (.md) to use",
+      "examples": [["story_template.md", "report_template.md"]]
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\*[a-zA-Z][a-zA-Z0-9_-]*$",
+        "description": "Command must start with * and be alphanumeric"
+      },
+      "uniqueItems": true,
+      "maxItems": 10,
+      "description": "Available commands that map to flow transitions",
+      "examples": [["*analyze", "*validate", "*report"]]
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+        "description": "Tool name must be alphanumeric with underscores"
+      },
+      "uniqueItems": true,
+      "maxItems": 10,
+      "description": "List of tools/utilities available to the agent",
+      "examples": [["text_splitter", "validator", "search_engine"]]
+    },
+    "memory_scope": {
+      "type": "string",
+      "oneOf": [
+        {"const": "isolated", "description": "Agent has isolated memory"},
+        {"const": "shared", "description": "Agent shares memory with all agents"},
+        {"pattern": "^shared:[a-zA-Z][a-zA-Z0-9_-]*$", "description": "Agent shares memory within namespace"}
+      ],
+      "default": "isolated",
+      "description": "Memory isolation level for the agent"
+    },
+    "wait_for": {
+      "type": "object",
+      "properties": {
+        "docs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_/-]+\\.(md|txt|json|yaml)$",
+            "description": "Document file path"
+          },
+          "uniqueItems": true,
+          "maxItems": 20,
+          "description": "Documents that must exist before agent can execute"
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+            "description": "Agent ID"
+          },
+          "uniqueItems": true,
+          "maxItems": 10,
+          "description": "Agents that must complete before this agent can execute"
+        }
+      },
+      "additionalProperties": false,
+      "default": {"docs": [], "agents": []},
+      "description": "Dependencies that must be satisfied before execution"
+    },
+    "parallel": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this agent can execute in parallel with others"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": "senior_analyst",
+      "description": "Senior business analyst for requirements gathering and validation",
+      "format_version": "2.0",
+      "persona": "Senior business analyst with 10+ years experience in enterprise software requirements",
+      "tasks": ["analyze_requirements.md", "validate_stories.md"],
+      "checklists": ["quality_checklist.md", "completeness_check.md"],
+      "templates": ["story_template.md", "analysis_report.md"],
+      "commands": ["*analyze", "*validate", "*report"],
+      "tools": ["text_splitter", "validator"],
+      "memory_scope": "shared:analysis",
+      "wait_for": {
+        "docs": ["requirements.md", "constraints.md"],
+        "agents": []
+      },
+      "parallel": false
+    },
+    {
+      "id": "simple_agent",
+      "description": "Basic v1.0 compatibility example",
+      "format_version": "1.0",
+      "tools": ["basic_tool"],
+      "memory_scope": "isolated",
+      "wait_for": {"docs": [], "agents": []},
+      "parallel": false
+    }
+  ],
+  "errorMessage": {
+    "properties": {
+      "id": "Agent ID must be alphanumeric string with underscores/hyphens, 1-64 characters",
+      "description": "Description must be under 500 characters",
+      "persona": "Persona must be under 200 characters for token efficiency",
+      "tasks": "Tasks must be array of .md filenames, maximum 10 items",
+      "checklists": "Checklists must be array of .md filenames, maximum 5 items", 
+      "templates": "Templates must be array of .md filenames, maximum 5 items",
+      "commands": "Commands must start with * and be alphanumeric, maximum 10 items",
+      "tools": "Tools must be alphanumeric strings with underscores, maximum 10 items",
+      "memory_scope": "Memory scope must be 'isolated', 'shared', or 'shared:namespace'",
+      "wait_for": "Dependencies must specify valid document paths and agent IDs",
+      "parallel": "Parallel must be boolean value"
+    }
+  }
+}
