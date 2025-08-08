@@ -19,5 +19,8 @@ server:
   port: 8000
   workers: 1  # for development, 4 for production
 
+orchestrator:
+  retention_days: 7
+
 # Dependency handling configuration
 on_missing_doc: skip  # 'wait' | 'skip' | 'error'
